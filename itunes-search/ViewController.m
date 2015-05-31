@@ -23,6 +23,7 @@ NSString * const BASE_URL = @"https://itunes.apple.com/search/";
     NSMutableArray *searchResult;
 }
 
+// Parameters for GET-request.
 - (NSMutableDictionary *)initializeParameters
 {
     NSMutableDictionary *parameters = [NSMutableDictionary dictionary];
@@ -34,6 +35,7 @@ NSString * const BASE_URL = @"https://itunes.apple.com/search/";
     return parameters;
 }
 
+// Handle response from ITunes API.
 - (void)search:(NSMutableDictionary *)parameters
 {
     searchResult = [[NSMutableArray alloc] init];
@@ -73,9 +75,7 @@ NSString * const BASE_URL = @"https://itunes.apple.com/search/";
     self.refreshControl = [[UIRefreshControl alloc] init];
     self.refreshControl.backgroundColor = [UIColor purpleColor];
     self.refreshControl.tintColor = [UIColor whiteColor];
-    [self.refreshControl addTarget:self
-                            action:@selector(update)
-                  forControlEvents:UIControlEventValueChanged];
+    [self.refreshControl addTarget:self action:@selector(update) forControlEvents:UIControlEventValueChanged];
     
     [self update];
 
@@ -100,13 +100,15 @@ NSString * const BASE_URL = @"https://itunes.apple.com/search/";
     [self.tableView reloadData];
     
     // End the refreshing
-    if (self.refreshControl) {
-        
+    if (self.refreshControl)
+    {
+        // Set format of title
         NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
         [formatter setDateFormat:@"MMM d, h:mm a"];
+        
         NSString *title = [NSString stringWithFormat:@"Last update: %@", [formatter stringFromDate:[NSDate date]]];
-        NSDictionary *attrsDictionary = [NSDictionary dictionaryWithObject:[UIColor whiteColor]
-                                                                    forKey:NSForegroundColorAttributeName];
+        NSDictionary *attrsDictionary = [NSDictionary dictionaryWithObject:[UIColor whiteColor] forKey:NSForegroundColorAttributeName];
+        
         NSAttributedString *attributedTitle = [[NSAttributedString alloc] initWithString:title attributes:attrsDictionary];
         self.refreshControl.attributedTitle = attributedTitle;
         
