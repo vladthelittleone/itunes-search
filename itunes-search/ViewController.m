@@ -48,7 +48,10 @@ NSString * const BASE_URL = @"https://itunes.apple.com/search/";
         if ([responseObject isKindOfClass:[NSDictionary class]])
         {
             [searchResult addObjectsFromArray:[responseObject valueForKey:@"results"]];
-            [self.tableView reloadData];
+            
+            // As this block of code is run in a background thread, we need to ensure the GUI
+            // update is executed in the main thread
+            [self performSelectorOnMainThread:@selector(reloadData) withObject:nil waitUntilDone:NO];
         }
     }
     failure:^(AFHTTPRequestOperation *operation, NSError *error)
@@ -57,11 +60,24 @@ NSString * const BASE_URL = @"https://itunes.apple.com/search/";
     }];
 }
 
+- (void)update
+{
+    [self search:[self initializeParameters]];
+}
+
 - (void)viewDidLoad
 {
     [super viewDidLoad];
     
-    [self search:[self initializeParameters]];
+    // Initialize the refresh control.
+    self.refreshControl = [[UIRefreshControl alloc] init];
+    self.refreshControl.backgroundColor = [UIColor purpleColor];
+    self.refreshControl.tintColor = [UIColor whiteColor];
+    [self.refreshControl addTarget:self
+                            action:@selector(update)
+                  forControlEvents:UIControlEventValueChanged];
+    
+    [self update];
 
     self.tableView.estimatedRowHeight = 100.0;
     self.tableView.rowHeight = UITableViewAutomaticDimension;
@@ -78,6 +94,54 @@ NSString * const BASE_URL = @"https://itunes.apple.com/search/";
     return [searchResult count];
 }
 
+- (void)reloadData
+{
+    // Reload table data
+    [self.tableView reloadData];
+    
+    // End the refreshing
+    if (self.refreshControl) {
+        
+        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+        [formatter setDateFormat:@"MMM d, h:mm a"];
+        NSString *title = [NSString stringWithFormat:@"Last update: %@", [formatter stringFromDate:[NSDate date]]];
+        NSDictionary *attrsDictionary = [NSDictionary dictionaryWithObject:[UIColor whiteColor]
+                                                                    forKey:NSForegroundColorAttributeName];
+        NSAttributedString *attributedTitle = [[NSAttributedString alloc] initWithString:title attributes:attrsDictionary];
+        self.refreshControl.attributedTitle = attributedTitle;
+        
+        [self.refreshControl endRefreshing];
+    }
+}
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
+{
+    // Return the number of sections.
+    if (searchResult == nil || [searchResult count] == 0)
+    {
+        // Display a message when the table is empty
+        UILabel *messageLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height)];
+        
+        messageLabel.text = @"No data is currently available. Please pull down to refresh.";
+        messageLabel.textColor = [UIColor blackColor];
+        messageLabel.numberOfLines = 0;
+        messageLabel.textAlignment = NSTextAlignmentCenter;
+        messageLabel.font = [UIFont fontWithName:@"Palatino-Italic" size:20];
+        [messageLabel sizeToFit];
+        
+        self.tableView.backgroundView = messageLabel;
+        self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    }
+    else
+    {
+        self.tableView.backgroundView = nil;
+        self.tableView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
+        return 1;
+    }
+    
+    return 0;
+}
+
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     static NSString *cellIdentifier = @"ItunesSearchCell";
@@ -85,7 +149,8 @@ NSString * const BASE_URL = @"https://itunes.apple.com/search/";
     ItunesSearchViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
     
     // Configure the cell...
-    if (cell == nil) {
+    if (cell == nil)
+    {
         cell = [[ItunesSearchViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellIdentifier];
     }
     
