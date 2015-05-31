@@ -10,11 +10,7 @@
 
 // UITableViewDataSource is the link between your data and the table view.
 // UITableViewDelegate, on the other hand, deals with the appearance of the UITableView.
-@interface ViewController : UIViewController<UITableViewDataSource, UITableViewDelegate>
-
-@property (weak, nonatomic) IBOutlet UIActivityIndicatorView *indicator;
-
-@property (weak, nonatomic) IBOutlet UITableView *tableView;
+@interface ViewController : UITableViewController
 
 @end
 
